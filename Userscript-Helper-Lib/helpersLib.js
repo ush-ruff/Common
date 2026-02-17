@@ -1,21 +1,37 @@
 'use strict'
 
 const LIB_NAME = "ushruffUSKit"
-const LIB_VERSION = "0.1.0"
+const LIB_VERSION = "0.3.0"
 
 ;(function () {
   // --------------------------------------------------------------------------------
   // Private Functions
   // --------------------------------------------------------------------------------
   // Key handler
-  function pressKey(e, keyListObj) {
+  let timers = {}
+
+  function handleKeyDown(e, keyListObj) {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return
 
     const keyName = normalizeKey(e)
-    if (keyListObj[keyName]) {
-      e.preventDefault()
-      keyListObj[keyName].action()
+
+    if (!(keyName in keyListObj) || keyName in timers) return
+
+    timers[keyName] = null
+    e.preventDefault()
+    keyListObj[keyName].action()
+    if (keyListObj[keyName].repeat) {
+      timers[keyName] = requestAnimationFrame(repeatAnimation.bind(null, keyName, keyListObj[keyName].action))
     }
+  }
+
+  function handleKeyUp() {
+    for (const keyName in timers) {
+      if (timers[keyName] != null) {
+        cancelAnimationFrame(timers[keyName])
+      }
+    }
+    timers = {}
   }
 
   function normalizeKey(e) {
@@ -34,6 +50,11 @@ const LIB_VERSION = "0.1.0"
 
     parts.push(keyText)
     return parts.join(" + ")
+  }
+
+  function repeatAnimation(keyName, func) {
+    func()
+    timers[keyName] = requestAnimationFrame(repeatAnimation.bind(null, keyName, func))
   }
 
   // Modal creation
@@ -76,7 +97,6 @@ const LIB_VERSION = "0.1.0"
     const styleSheet = document.createElement("style")
 
     styleSheet.textContent = `
-      /* Modal Styles */
       #${modalID} {
         min-width: 700px;
         padding: 1rem;
@@ -114,11 +134,11 @@ const LIB_VERSION = "0.1.0"
         border: none;
         color: inherit;
         cursor: pointer;
-      }
 
-      .${modalID}-close:is(:hover, :focus) {
-        border: none;
-        color: #f2f2f2;
+        &:is(:hover, :focus) {
+          border: none;
+          color: #f2f2f2;
+        }
       }
 
       #${modalID} ul {
@@ -134,14 +154,15 @@ const LIB_VERSION = "0.1.0"
         gap: 8rem;
         padding-block: 0.75rem;
         color: #b9b9b9;
-      }
 
-      #${modalID} li:not(:last-child) {
-        border-bottom: 1px solid #333;
+        &:not(:last-child) {
+          border-bottom: 1px solid #333;
+        }
       }
 
       .shortcut-key {
         min-width: 120px;
+        font-family: "Overpass Mono", Monospace;
         text-align: center;
         line-height: 2;
         background: #282828;
@@ -178,17 +199,23 @@ const LIB_VERSION = "0.1.0"
     }
   }
 
-  function clickElement(element) {
+  function clickElement(...elements) {
+  for (const element of elements) {
     const el = document.querySelector(element)
 
-    if (el !== null) el.click()
+    if (el !== null) {
+      el.click()
+      return
+    }
   }
+}
 
   let keyHandlerInstalled = false
 
   function installKeyHandler(keyListObj) {
     if (keyHandlerInstalled) return
-    window.addEventListener("keydown", (e) => {pressKey(e, keyListObj)})
+    document.addEventListener("keydown", (e) => {handleKeyDown(e, keyListObj)})
+    document.addEventListener("keyup", handleKeyUp)
     keyHandlerInstalled = true
   }
 
@@ -200,7 +227,7 @@ const LIB_VERSION = "0.1.0"
     const closeBtn = shortcutModal.querySelector(`.${modalID}-close`)
     closeBtn.addEventListener("click", () => {shortcutModal.close()})
 
-    window.addEventListener("click", (event) => {
+    document.addEventListener("click", (event) => {
       if (event.target === shortcutModal) shortcutModal.close()
     })
   }
