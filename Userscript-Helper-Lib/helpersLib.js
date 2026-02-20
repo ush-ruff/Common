@@ -1,7 +1,7 @@
 'use strict'
 
 const LIB_NAME = "ushruffUSKit"
-const LIB_VERSION = "0.3.0"
+const LIB_VERSION = "0.3.1"
 
 ;(function () {
   // --------------------------------------------------------------------------------
@@ -11,7 +11,7 @@ const LIB_VERSION = "0.3.0"
   let timers = {}
 
   function handleKeyDown(e, keyListObj) {
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.id === "contenteditable-root") return
 
     const keyName = normalizeKey(e)
 
@@ -200,15 +200,15 @@ const LIB_VERSION = "0.3.0"
   }
 
   function clickElement(...elements) {
-  for (const element of elements) {
-    const el = document.querySelector(element)
+    for (const element of elements) {
+      const el = document.querySelector(element)
 
-    if (el !== null) {
-      el.click()
-      return
+      if (el !== null) {
+        el.click()
+        return
+      }
     }
   }
-}
 
   let keyHandlerInstalled = false
 
