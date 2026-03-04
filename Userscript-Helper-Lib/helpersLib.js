@@ -1,7 +1,15 @@
+// ==UserScript==
+// @name         ushrufUSKit
+// @namespace    https://github.com/ush-ruff/
+// @version      0.3.2
+// @description  Shared helper library for userscripts
+// @grant        none
+// ==/UserScript==
+
 'use strict'
 
 const LIB_NAME = "ushruffUSKit"
-const LIB_VERSION = "0.3.1"
+const LIB_VERSION = "0.3.2"
 
 ;(function () {
   // --------------------------------------------------------------------------------
