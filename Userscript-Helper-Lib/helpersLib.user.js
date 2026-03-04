@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name         [ushruffUSKit] Userscript Helper Library
 // @namespace    https://github.com/ush-ruff/
+// @author       ushruff
 // @version      0.3.3
 // @description  Shared helper library for userscripts
 // @match        *://*/*
@@ -8,6 +9,7 @@
 // @homepageURL  https://github.com/ush-ruff/Common/
 // @downloadURL  https://github.com/ush-ruff/Common/raw/main/Userscript-Helper-Lib/helpersLib.user.js
 // @grant        none
+// @license      GNU GPLv3
 // @run-at       document-start
 // ==/UserScript==
 
