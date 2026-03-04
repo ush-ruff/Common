@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         ushrufUSKit
+// @name         [ushruffUSKit] Userscript Helper Library
 // @namespace    https://github.com/ush-ruff/
 // @version      0.3.3
 // @description  Shared helper library for userscripts
