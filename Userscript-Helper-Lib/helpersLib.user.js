@@ -6,8 +6,9 @@
 // @match        *://*/*
 // @icon
 // @homepageURL  https://github.com/ush-ruff/Common/
-// @downloadURL  https://github.com/ush-ruff/Common/raw/standalone-version/Userscript-Helper-Lib/helpersLib.js
+// @downloadURL  https://github.com/ush-ruff/Common/raw/standalone-version/Userscript-Helper-Lib/helpersLib.user.js
 // @grant        none
+// @run-at       document-start
 // ==/UserScript==
 
 'use strict'
