@@ -2,7 +2,7 @@
 // @name         [ushruffUSKit] Userscript Helper Library
 // @namespace    https://github.com/ush-ruff/
 // @author       ushruff
-// @version      0.3.3
+// @version      0.3.4
 // @description  Shared helper library for userscripts
 // @match        *://*/*
 // @icon
@@ -26,7 +26,7 @@ const LIB_VERSION = "0.3.3"
   let timers = {}
 
   function handleKeyDown(e, keyListObj) {
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.id === "contenteditable-root") return
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.id === "contenteditable-root" || e.target.contentEditable === "true") return
 
     const keyName = normalizeKey(e)
 
