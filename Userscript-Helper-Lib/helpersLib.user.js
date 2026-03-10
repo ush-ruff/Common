@@ -2,7 +2,7 @@
 // @name         [ushruffUSKit] Userscript Helper Library
 // @namespace    https://github.com/ush-ruff/
 // @author       ushruff
-// @version      0.3.4
+// @version      0.4.0
 // @description  Shared helper library for userscripts
 // @match        *://*/*
 // @icon
@@ -16,17 +16,18 @@
 'use strict'
 
 const LIB_NAME = "ushruffUSKit"
-const LIB_VERSION = "0.3.3"
+const LIB_VERSION = "0.4.0" // Keep in sync with @version above
 
 ;(function () {
   // --------------------------------------------------------------------------------
   // Private Functions
   // --------------------------------------------------------------------------------
+
   // Key handler
   let timers = {}
 
   function handleKeyDown(e, keyListObj) {
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.id === "contenteditable-root" || e.target.contentEditable === "true") return
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.contentEditable === "true") return
 
     const keyName = normalizeKey(e)
 
@@ -40,13 +41,10 @@ const LIB_VERSION = "0.3.3"
     }
   }
 
-  function handleKeyUp() {
-    for (const keyName in timers) {
-      if (timers[keyName] != null) {
-        cancelAnimationFrame(timers[keyName])
-      }
-    }
-    timers = {}
+  function handleKeyUp(e) {
+    const keyName = normalizeKey(e)
+    if (timers[keyName] != null) cancelAnimationFrame(timers[keyName])
+    delete timers[keyName]
   }
 
   function normalizeKey(e) {
@@ -55,13 +53,13 @@ const LIB_VERSION = "0.3.3"
     if (e.shiftKey) parts.push("Shift")
     if (e.altKey) parts.push("Alt")
 
-    // Convert key into friendly text
-    let keyText = e.key.toUpperCase()
+    // Single character keys are uppercased (e.g. "f" → "F")
+    // Named keys keep their natural title case from e.key (e.g. "ArrowDown", "Escape")
+    // F-keys kept as-is (e.g. "F1", "F5")
+    // Space mapped to a readable label
+    let keyText = e.key
     if (keyText === " ") keyText = "Space"
-    if (keyText.length > 1 && !/F\d+/.test(keyText)) {
-      // Special named keys (ArrowUp, Escape, etc.)
-      keyText = keyText[0].toUpperCase() + keyText.slice(1)
-    }
+    else if (keyText.length === 1) keyText = keyText.toUpperCase()
 
     parts.push(keyText)
     return parts.join(" + ")
@@ -72,10 +70,9 @@ const LIB_VERSION = "0.3.3"
     timers[keyName] = requestAnimationFrame(repeatAnimation.bind(null, keyName, func))
   }
 
+
   // Modal creation
   function insertModalHTML(modalID, keyListObj) {
-    if (document.getElementById(modalID)) return
-
     const modal = document.createElement("dialog")
     modal.id = modalID
 
@@ -192,6 +189,13 @@ const LIB_VERSION = "0.3.3"
   // --------------------------------------------------------------------------------
   // Public API Functions
   // --------------------------------------------------------------------------------
+
+  /**
+   * Compares two semver-style version strings.
+   * @param {string} a - First version string e.g. "1.2.3"
+   * @param {string} b - Second version string e.g. "1.1.0"
+   * @returns {1 | -1 | 0} 1 if a > b, -1 if a < b, 0 if equal
+   */
   function compareVersions(a, b) {
     const pa = a.split(".").map(Number)
     const pb = b.split(".").map(Number)
@@ -205,15 +209,27 @@ const LIB_VERSION = "0.3.3"
     return 0
   }
 
+
+  /**
+   * Focuses a DOM element and selects its content if supported.
+   * Silently does nothing if the selector matches no element.
+   * @param {string} element - A CSS selector string
+   */
   function focusSelectElement(element) {
     const el = document.querySelector(element)
+    if (el === null) return
 
-    if (el !== null) {
-      el.focus()
-      el.select()
-    }
+    el.focus()
+    if (typeof el.select === "function") el.select()
   }
 
+
+  /**
+   * Clicks the first matching element from a list of CSS selectors.
+   * Tries each selector in order and clicks the first one found.
+   * Silently does nothing if no selectors match.
+   * @param {...string} elements - One or more CSS selectors tried in order
+   */
   function clickElement(...elements) {
     for (const element of elements) {
       const el = document.querySelector(element)
@@ -225,6 +241,20 @@ const LIB_VERSION = "0.3.3"
     }
   }
 
+
+  /**
+   * Registers a global keyboard shortcut handler. Can only be called once per page -
+   * subsequent calls are ignored. Shortcuts are suppressed when focus is on an input,
+   * textarea, or contenteditable element.
+  *
+  * Key name format:
+  *   - Single chars: uppercase ("F", "A", "?")
+  *   - Named keys: title case from e.key ("Escape", "ArrowDown", "Enter")
+  *   - F-keys: as-is ("F1", "F5")
+  *   - With modifiers: "Ctrl + S", "Shift + ?"
+  *
+  * @param {Object.<string, {action: Function, label: string, repeat?: boolean}>} keyListObj
+  */
   let keyHandlerInstalled = false
 
   function installKeyHandler(keyListObj) {
@@ -234,7 +264,17 @@ const LIB_VERSION = "0.3.3"
     keyHandlerInstalled = true
   }
 
+
+  /**
+   * Creates and injects a keyboard shortcut help dialog into the page.
+   * Safe to call multiple times - duplicate calls for the same modalID are ignored.
+   * Must be called before showShortcutInfo.
+   * @param {string} modalID - A unique ID for the modal element
+   * @param {Object} keyListObj - The same key map passed to installKeyHandler
+   */
   function setupShortcutInfo(modalID, keyListObj) {
+    if (document.getElementById(modalID)) return
+
     insertModalHTML(modalID, keyListObj)
     addStyle(modalID)
 
@@ -247,6 +287,12 @@ const LIB_VERSION = "0.3.3"
     })
   }
 
+
+  /**
+   * Opens the shortcut help dialog.
+   * Requires setupShortcutInfo to have been called first with the same modalID.
+   * @param {string} modalID - The ID passed to setupShortcutInfo
+   */
   function showShortcutInfo(modalID) {
     const shortcutModal = document.querySelector(`#${modalID}`)
     if (!shortcutModal) return
