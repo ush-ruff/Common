@@ -2,7 +2,7 @@
 // @name         [ushruffUSKit] Userscript Helper Library
 // @namespace    https://github.com/ush-ruff/
 // @author       ushruff
-// @version      0.4.0
+// @version      0.4.1
 // @description  Shared helper library for userscripts
 // @match        *://*/*
 // @icon
@@ -16,7 +16,7 @@
 'use strict'
 
 const LIB_NAME = "ushruffUSKit"
-const LIB_VERSION = "0.4.0" // Keep in sync with @version above
+const LIB_VERSION = "0.4.1" // Keep in sync with @version above
 
 ;(function () {
   // --------------------------------------------------------------------------------
@@ -31,10 +31,13 @@ const LIB_VERSION = "0.4.0" // Keep in sync with @version above
 
     const keyName = normalizeKey(e)
 
-    if (!(keyName in keyListObj) || keyName in timers) return
+    if (!(keyName in keyListObj)) return
+
+    e.preventDefault()
+
+    if (keyName in timers) return
 
     timers[keyName] = null
-    e.preventDefault()
     keyListObj[keyName].action()
     if (keyListObj[keyName].repeat) {
       timers[keyName] = requestAnimationFrame(repeatAnimation.bind(null, keyName, keyListObj[keyName].action))
