@@ -44,7 +44,7 @@ const ushruffUSKit = ensureUSKit.getUSKit()
 Then destructure whichever utilities you need:
 
 ```js
-const { installKeyHandler, focusSelectElement, clickElement, setupShortcutInfo, showShortcutInfo } = ushruffUSKit
+const { registerShortcutKeys, focusSelectElement, clickElement, setupShortcutInfo, showShortcutInfo } = ushruffUSKit
 ```
 
 ---
@@ -61,8 +61,9 @@ Here's a complete working example putting it all together:
 // ==/UserScript==
 
 const ushruffUSKit = ensureUSKit.getUSKit()
-const { installKeyHandler, focusSelectElement, clickElement, setupShortcutInfo, showShortcutInfo } = ushruffUSKit
+const { registerShortcutKeys, focusSelectElement, clickElement, setupShortcutInfo, showShortcutInfo } = ushruffUSKit
 
+const SCRIPT_ID = "my-script"
 const MODAL_ID = "my-shortcuts"
 
 const KEYS = {
@@ -85,7 +86,7 @@ const KEYS = {
   },
 }
 
-installKeyHandler(KEYS)
+registerShortcutKeys(SCRIPT_ID, KEYS)
 setupShortcutInfo(MODAL_ID, KEYS)
 ```
 
@@ -93,16 +94,19 @@ setupShortcutInfo(MODAL_ID, KEYS)
 
 ## API Reference
 
-### `installKeyHandler(keyListObj)`
+### `registerShortcutKeys(scriptID, keyListObj)`
 
-Registers a global keyboard shortcut handler. **Can only be called once per page** - subsequent calls are ignored.
+Registers a keyboard shortcut keymap for a userscript. Each script must provide a unique `scriptID` and can only register once per ID - subsequent calls with the same ID are ignored.
 
 Shortcuts are ignored when the user is focused on an `<input>`, `<textarea>`, or any `contenteditable` element.
+
+> **Note:** If two registered scripts bind the same key, a warning is logged to the console. The first script to register the key wins.
 
 **Parameters**
 
 | Parameter    | Type     | Description                                    |
 | ------------ | -------- | ---------------------------------------------- |
+| `scriptID`   | String   | A unique identifier for your script            |
 | `keyListObj` | Object   | Map of key names to their action configuration |
 
 Each entry in `keyListObj` has the following shape:
@@ -146,7 +150,7 @@ const KEYS = {
   },
 }
 
-installKeyHandler(KEYS)
+registerShortcutKeys("my-script", KEYS)
 ```
 
 ---
@@ -159,8 +163,8 @@ Silently does nothing if the selector doesn't match any element.
 
 **Parameters**
 
-| Parameter  | Type   | Description          |
-| ---------- | ------ | -------------------- |
+| Parameter  | Type   | Description           |
+| ---------- | ------ | --------------------- |
 | `selector` | String | A CSS selector string |
 
 **Returns:** `void`
@@ -181,8 +185,8 @@ Silently does nothing if none of the selectors match.
 
 **Parameters**
 
-| Parameter     | Type      | Description                                                |
-| ------------- | --------- | ---------------------------------------------------------- |
+| Parameter     | Type        | Description                               |
+| ------------- | ----------- | ----------------------------------------- |
 | `...selectors`| `...String` | One or more CSS selectors, tried in order |
 
 **Returns:** `void`
@@ -198,16 +202,18 @@ clickElement("#confirm-btn", "#ok-btn", ".dialog-accept")
 
 ### `setupShortcutInfo(modalID, keyListObj)`
 
-Creates and injects a keyboard shortcut help dialog into the page. Call this once during initialization, before calling `showShortcutInfo`.
+Creates and injects a keyboard shortcut help dialog into the page. Call this once during initialization, before calling `showShortcutInfo`. Safe to call multiple times — duplicate calls for the same `modalID` are ignored.
 
-The modal is built from the same `keyListObj` passed to `installKeyHandler`. It can be closed by clicking the × button or clicking outside the dialog.
+The modal is built from the same `keyListObj` passed to `registerShortcutKeys`. It can be closed by clicking the × button or clicking outside the dialog.
+
+> **Note:** The modalID should conform to the ID selector formatting standards in CSS. https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Selectors/ID_selectors
 
 **Parameters**
 
-| Parameter    | Type   | Description                                          |
-| ------------ | ------ | ---------------------------------------------------- |
-| `modalID`    | String | A unique ID for the modal element                    |
-| `keyListObj` | Object | The same key map passed to `installKeyHandler`       |
+| Parameter    | Type   | Description                                       |
+| ------------ | ------ | ------------------------------------------------- |
+| `modalID`    | String | A unique ID for the modal element                 |
+| `keyListObj` | Object | The same key map passed to `registerShortcutKeys` |
 
 **Returns:** `void`
 

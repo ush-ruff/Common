@@ -2,7 +2,7 @@
 // @name         [ushruffUSKit] Userscript Helper Library
 // @namespace    https://github.com/ush-ruff/
 // @author       ushruff
-// @version      0.4.1
+// @version      0.5.0
 // @description  Shared helper library for userscripts
 // @match        *://*/*
 // @icon
@@ -16,7 +16,7 @@
 'use strict'
 
 const LIB_NAME = "ushruffUSKit"
-const LIB_VERSION = "0.4.1" // Keep in sync with @version above
+const LIB_VERSION = "0.5.0" // Keep in sync with @version above
 
 ;(function () {
   // --------------------------------------------------------------------------------
@@ -24,30 +24,39 @@ const LIB_VERSION = "0.4.1" // Keep in sync with @version above
   // --------------------------------------------------------------------------------
 
   // Key handler
-  let timers = {}
+  let timers = new Map()
+  const keyMaps = new Map()
+  let keyHandlerInstalled = false
 
-  function handleKeyDown(e, keyListObj) {
+  function handleKeyDown(e) {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.contentEditable === "true") return
 
     const keyName = normalizeKey(e)
 
-    if (!(keyName in keyListObj)) return
+    for (const [, keyListObj] of keyMaps) {
+      if (!(keyName in keyListObj)) continue
 
-    e.preventDefault()
+      e.preventDefault()
 
-    if (keyName in timers) return
+      if (timers.has(keyName)) return
 
-    timers[keyName] = null
-    keyListObj[keyName].action()
-    if (keyListObj[keyName].repeat) {
-      timers[keyName] = requestAnimationFrame(repeatAnimation.bind(null, keyName, keyListObj[keyName].action))
+      const { action, repeat } = keyListObj[keyName]
+      timers.set(keyName, null)
+      action()
+
+      if (repeat) {
+        timers.set(keyName, requestAnimationFrame(repeatAnimation.bind(null, keyName, action)))
+      }
+
+      return
     }
   }
 
   function handleKeyUp(e) {
     const keyName = normalizeKey(e)
-    if (timers[keyName] != null) cancelAnimationFrame(timers[keyName])
-    delete timers[keyName]
+    if (!timers.has(keyName)) return
+    if (timers.get(keyName) != null) cancelAnimationFrame(timers.get(keyName))
+    timers.delete(keyName)
   }
 
   function normalizeKey(e) {
@@ -70,7 +79,7 @@ const LIB_VERSION = "0.4.1" // Keep in sync with @version above
 
   function repeatAnimation(keyName, func) {
     func()
-    timers[keyName] = requestAnimationFrame(repeatAnimation.bind(null, keyName, func))
+    timers.set(keyName, requestAnimationFrame(repeatAnimation.bind(null, keyName, func)))
   }
 
 
@@ -82,7 +91,7 @@ const LIB_VERSION = "0.4.1" // Keep in sync with @version above
     const modalInner = `
       <div class="${modalID}-header">
         <h2 class="${modalID}-title">Shortcut Keys</h2>
-        <span class="${modalID}-close">&times;</span>
+        <span class="${modalID}-close" data-custom-modal-close>&times;</span>
       </div>
     `
     modal.innerHTML = modalInner
@@ -246,25 +255,38 @@ const LIB_VERSION = "0.4.1" // Keep in sync with @version above
 
 
   /**
-   * Registers a global keyboard shortcut handler. Can only be called once per page -
-   * subsequent calls are ignored. Shortcuts are suppressed when focus is on an input,
-   * textarea, or contenteditable element.
-  *
-  * Key name format:
-  *   - Single chars: uppercase ("F", "A", "?")
-  *   - Named keys: title case from e.key ("Escape", "ArrowDown", "Enter")
-  *   - F-keys: as-is ("F1", "F5")
-  *   - With modifiers: "Ctrl + S", "Shift + ?"
-  *
-  * @param {Object.<string, {action: Function, label: string, repeat?: boolean}>} keyListObj
-  */
-  let keyHandlerInstalled = false
+   * Registers a keyboard shortcut keymap for a userscript.
+   * Each script must provide a unique ID and can only register once.
+   * If a duplicate ID is used, the registration is ignored.
+   *
+   * Key name format:
+   *   - Single chars: uppercase ("F", "A", "?")
+   *   - Named keys: title case from e.key ("Escape", "ArrowDown", "Enter")
+   *   - F-keys: as-is ("F1", "F5")
+   *   - With modifiers: "Ctrl + S", "Shift + ?"
+   *
+   * @param {string} scriptID - Unique identifier for the script registering shortcuts
+   * @param {Object.<string, {action: Function, label: string, repeat?: boolean}>} keyListObj
+   */
+  function registerShortcutKeys(scriptID, keyListObj) {
+    if (keyMaps.has(scriptID)) return
 
-  function installKeyHandler(keyListObj) {
-    if (keyHandlerInstalled) return
-    document.addEventListener("keydown", (e) => {handleKeyDown(e, keyListObj)})
-    document.addEventListener("keyup", handleKeyUp)
-    keyHandlerInstalled = true
+    // Conflict detection
+    for (const [existingID, existingMap] of keyMaps) {
+      for (const key of Object.keys(keyListObj)) {
+        if (key in existingMap) {
+          console.warn(`[${LIB_NAME}] Shortcut conflict detected for "${key}" between "${existingID}" and "${scriptID}".`)
+        }
+      }
+    }
+
+    keyMaps.set(scriptID, keyListObj)
+
+    if (!keyHandlerInstalled) {
+      document.addEventListener("keydown", handleKeyDown)
+      document.addEventListener("keyup", handleKeyUp)
+      keyHandlerInstalled = true
+    }
   }
 
 
@@ -272,8 +294,11 @@ const LIB_VERSION = "0.4.1" // Keep in sync with @version above
    * Creates and injects a keyboard shortcut help dialog into the page.
    * Safe to call multiple times - duplicate calls for the same modalID are ignored.
    * Must be called before showShortcutInfo.
+   *
+   * The modalID should conform to the ID selector formatting standards in CSS.
+   * https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Selectors/ID_selectors
+   *
    * @param {string} modalID - A unique ID for the modal element
-   * @param {Object} keyListObj - The same key map passed to installKeyHandler
    */
   function setupShortcutInfo(modalID, keyListObj) {
     if (document.getElementById(modalID)) return
@@ -281,7 +306,7 @@ const LIB_VERSION = "0.4.1" // Keep in sync with @version above
     insertModalHTML(modalID, keyListObj)
     addStyle(modalID)
 
-    const shortcutModal = document.querySelector(`#${modalID}`)
+    const shortcutModal = document.getElementById(modalID)
     const closeBtn = shortcutModal.querySelector(`.${modalID}-close`)
     closeBtn.addEventListener("click", () => {shortcutModal.close()})
 
@@ -297,7 +322,7 @@ const LIB_VERSION = "0.4.1" // Keep in sync with @version above
    * @param {string} modalID - The ID passed to setupShortcutInfo
    */
   function showShortcutInfo(modalID) {
-    const shortcutModal = document.querySelector(`#${modalID}`)
+    const shortcutModal = document.getElementById(modalID)
     if (!shortcutModal) return
     shortcutModal.showModal()
   }
@@ -315,7 +340,7 @@ const LIB_VERSION = "0.4.1" // Keep in sync with @version above
       compareVersions,
       focusSelectElement,
       clickElement,
-      installKeyHandler,
+      registerShortcutKeys,
       setupShortcutInfo,
       showShortcutInfo,
     })
