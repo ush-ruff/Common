@@ -104,18 +104,18 @@ Shortcuts are ignored when the user is focused on an `<input>`, `<textarea>`, or
 
 **Parameters**
 
-| Parameter    | Type     | Description                                    |
-| ------------ | -------- | ---------------------------------------------- |
-| `scriptID`   | String   | A unique identifier for your script            |
-| `keyListObj` | Object   | Map of key names to their action configuration |
+| Parameter    | Type     | Description                                     |
+| ------------ | -------- | ----------------------------------------------- |
+| `scriptID`   | String   | A unique identifier for your script.            |
+| `keyListObj` | Object   | Map of key names to their action configuration. |
 
 Each entry in `keyListObj` has the following shape:
 
-| Property | Type     | Required | Description                                            |
-| -------- | -------- | -------- | ------------------------------------------------------ |
-| `action` | Function | Yes      | Called when the key is pressed                         |
-| `label`  | String   | Yes      | Description shown in the shortcut help modal           |
-| `repeat` | Boolean  | No       | If `true`, the action fires repeatedly while held down |
+| Property | Type     | Required | Description                                             |
+| -------- | -------- | -------- | ------------------------------------------------------- |
+| `action` | Function | Yes      | Called when the key is pressed.                         |
+| `label`  | String   | Yes      | Description shown in the shortcut help modal.           |
+| `repeat` | Boolean  | No       | If `true`, the action fires repeatedly while held down. |
 
 **Key name format**
 
@@ -155,25 +155,39 @@ registerShortcutKeys("my-script", KEYS)
 
 ---
 
-### `focusSelectElement(selector)`
+### `focusSelectElement(selector, state?, direction?)`
 
 Focuses a DOM element and selects its content. Useful for input fields and textareas.
 
-Silently does nothing if the selector doesn't match any element.
+Silently does nothing if no elements match the selector.
 
-**Parameters**
+Has two modes of operation:
 
-| Parameter  | Type   | Description           |
-| ---------- | ------ | --------------------- |
-| `selector` | String | A CSS selector string |
-
-**Returns:** `void`
-
-**Example**
+**Basic mode** — focuses the first element matching `selector`. `state` and `direction` are omitted:
 
 ```js
 focusSelectElement("#search-input")
 ```
+
+**Cycling mode** — pass a persistent `state` object to step through all matching elements in sequence, cycling back around at either end. On the first call, `'next'` starts at the first element and `'prev'` starts at the last:
+
+```js
+const state = {}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab' && e.shiftKey) focusSelectElement('input, button', state, 'prev')
+  else if (e.key === 'Tab')          focusSelectElement('input, button', state)
+})
+```
+
+**Parameters**
+
+| Parameter   | Type                                   | Required | Description                                                                                                                                                            |
+| ----------- | -------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `selector`  | String                                 | Yes      | A CSS selector string.                                                                                                                                                 |
+| `state`     | `{ list?: Element[], index?: number }` | No       | A persistent state object for cycling mode. `list` is lazily populated on the first call and reused on subsequent calls. `index` tracks the currently focused element. |
+| `direction` | `'next'` \| `'prev'`                   | No       | Direction to cycle through elements. Defaults to `'next'`. Only relevant when `state` is provided.                                                                     |
+
+**Returns:** `void`
 
 ---
 
@@ -185,9 +199,9 @@ Silently does nothing if none of the selectors match.
 
 **Parameters**
 
-| Parameter     | Type        | Description                               |
-| ------------- | ----------- | ----------------------------------------- |
-| `...selectors`| `...String` | One or more CSS selectors, tried in order |
+| Parameter     | Type        | Description                                |
+| ------------- | ----------- | ------------------------------------------ |
+| `...selectors`| `...String` | One or more CSS selectors, tried in order. |
 
 **Returns:** `void`
 
@@ -210,10 +224,10 @@ The modal is built from the same `keyListObj` passed to `registerShortcutKeys`. 
 
 **Parameters**
 
-| Parameter    | Type   | Description                                       |
-| ------------ | ------ | ------------------------------------------------- |
-| `modalID`    | String | A unique ID for the modal element                 |
-| `keyListObj` | Object | The same key map passed to `registerShortcutKeys` |
+| Parameter    | Type   | Description                                        |
+| ------------ | ------ | -------------------------------------------------- |
+| `modalID`    | String | A unique ID for the modal element.                 |
+| `keyListObj` | Object | The same key map passed to `registerShortcutKeys`. |
 
 **Returns:** `void`
 
@@ -231,9 +245,9 @@ Opens the shortcut help dialog. Requires `setupShortcutInfo` to have been called
 
 **Parameters**
 
-| Parameter | Type   | Description                                 |
-| --------- | ------ | ------------------------------------------- |
-| `modalID` | String | The ID passed to `setupShortcutInfo`        |
+| Parameter | Type   | Description                                  |
+| --------- | ------ | -------------------------------------------- |
+| `modalID` | String | The ID passed to `setupShortcutInfo`.        |
 
 **Returns:** `void`
 
@@ -256,10 +270,10 @@ Compares two semver-style version strings.
 
 **Parameters**
 
-| Parameter | Type   | Description              |
-| --------- | ------ | ------------------------ |
-| `a`       | String | Version string, e.g. `"1.2.3"` |
-| `b`       | String | Version string to compare against |
+| Parameter | Type   | Description                        |
+| --------- | ------ | ---------------------------------- |
+| `a`       | String | Version string, e.g. `"1.2.3"`.    |
+| `b`       | String | Version string to compare against. |
 
 **Returns:** `1` if `a > b`, `-1` if `a < b`, `0` if equal.
 

@@ -2,7 +2,7 @@
 // @name         [ushruffUSKit] Userscript Helper Library
 // @namespace    https://github.com/ush-ruff/
 // @author       ushruff
-// @version      0.5.0
+// @version      0.6.0
 // @description  Shared helper library for userscripts
 // @match        *://*/*
 // @icon
@@ -16,7 +16,7 @@
 'use strict'
 
 const LIB_NAME = "ushruffUSKit"
-const LIB_VERSION = "0.5.0" // Keep in sync with @version above
+const LIB_VERSION = "0.6.0" // Keep in sync with @version above
 
 ;(function () {
   // --------------------------------------------------------------------------------
@@ -223,28 +223,64 @@ const LIB_VERSION = "0.5.0" // Keep in sync with @version above
 
 
   /**
-   * Focuses a DOM element and selects its content if supported.
-   * Silently does nothing if the selector matches no element.
-   * @param {string} element - A CSS selector string
-   */
-  function focusSelectElement(element) {
-    const el = document.querySelector(element)
+ * Focuses a DOM element and selects its content if supported.
+ * Silently does nothing if the selector matches no element.
+ *
+ * **Basic mode** — focuses the first element matching `selector`:
+ * ```js
+ * focusSelectElement('input#username')
+ * ```
+ *
+ * **Cycling mode** — pass a persistent `state` object to step through all
+ * matching elements in sequence, cycling back around at either end:
+ * ```js
+ * const state = {}
+ * document.addEventListener('keydown', (e) => {
+ *   if (e.key === 'Tab' && e.shiftKey) focusSelectElement('input, button', state, 'prev')
+ *   else if (e.key === 'Tab')          focusSelectElement('input, button', state)
+ * })
+ * ```
+ *
+ * @param {string} selector - A CSS selector string.
+ * @param {{ list?: Element[], index?: number }} [state] - Optional persistent
+ *   state object for cycling mode. 
+ *   `list` is lazily populated on the first call.
+ *   `index` tracks the next element to focus. Omit for basic single-element mode.
+ * @param {'next'|'prev'} [direction='next'] - Direction to cycle through elements.
+ *   Only relevant when `state` is provided.
+ */
+function focusSelectElement(selector, state, direction = 'next') {
+  if (!state) {
+    const el = document.querySelector(selector)
     if (el === null) return
 
     el.focus()
     if (typeof el.select === "function") el.select()
+    return
   }
+
+  const elements = state.list ??= Array.from(document.querySelectorAll(selector))
+  if (!elements.length) return
+
+  const step = direction === 'prev' ? -1 : 1
+  const base = state.index ?? (direction === 'prev' ? elements.length : -1)
+  const index = (base + step + elements.length) % elements.length
+
+  state.index = index
+  elements[index].focus()
+  if (typeof elements[index].select === "function") elements[index].select()
+}
 
 
   /**
    * Clicks the first matching element from a list of CSS selectors.
    * Tries each selector in order and clicks the first one found.
    * Silently does nothing if no selectors match.
-   * @param {...string} elements - One or more CSS selectors tried in order
+   * @param {...string} selectors - One or more CSS selectors tried in order
    */
-  function clickElement(...elements) {
-    for (const element of elements) {
-      const el = document.querySelector(element)
+  function clickElement(...selectors) {
+    for (const selector of selectors) {
+      const el = document.querySelector(selector)
 
       if (el !== null) {
         el.click()
