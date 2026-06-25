@@ -2,7 +2,7 @@
 // @name         [ushruffUSKit] Userscript Helper Library
 // @namespace    https://github.com/ush-ruff/
 // @author       ushruff
-// @version      0.6.0
+// @version      0.7.0
 // @description  Shared helper library for userscripts
 // @match        *://*/*
 // @icon
@@ -16,7 +16,7 @@
 'use strict'
 
 const LIB_NAME = "ushruffUSKit"
-const LIB_VERSION = "0.6.0" // Keep in sync with @version above
+const LIB_VERSION = "0.7.0" // Keep in sync with @version above
 
 ;(function () {
   // --------------------------------------------------------------------------------
@@ -364,6 +364,32 @@ function focusSelectElement(selector, state, direction = 'next') {
   }
 
 
+  /**
+   * Polls the DOM at 100ms intervals until an element matching `selector` appears and resolves with it.
+   * Rejects with an error if the element does not appear within `timeout` milliseconds.
+   * @param {string} selector - A CSS selector string
+   * @param {number} [timeout=5000] - Maximum wait time in milliseconds
+   * @returns {Promise<Element>}
+   */
+  function waitForElement(selector, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+      const start = Date.now()
+
+      const interval = setInterval(() => {
+        const element = document.querySelector(selector)
+
+        if (element) {
+          clearInterval(interval)
+          resolve(element)
+        } else if (Date.now() - start > timeout) {
+          clearInterval(interval)
+          reject(new Error(`Element not found: ${selector}`))
+        }
+      }, 100)
+    })
+  }
+
+
   // --------------------------------------------------------------------------------
   // Register exports
   // --------------------------------------------------------------------------------
@@ -379,6 +405,7 @@ function focusSelectElement(selector, state, direction = 'next') {
       registerShortcutKeys,
       setupShortcutInfo,
       showShortcutInfo,
+      waitForElement,
     })
   }
 })()

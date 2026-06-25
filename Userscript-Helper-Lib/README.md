@@ -44,7 +44,7 @@ const ushruffUSKit = ensureUSKit.getUSKit()
 Then destructure whichever utilities you need:
 
 ```js
-const { registerShortcutKeys, focusSelectElement, clickElement, setupShortcutInfo, showShortcutInfo } = ushruffUSKit
+const { registerShortcutKeys, focusSelectElement, clickElement, waitForElement, setupShortcutInfo, showShortcutInfo } = ushruffUSKit
 ```
 
 ---
@@ -61,7 +61,7 @@ Here's a complete working example putting it all together:
 // ==/UserScript==
 
 const ushruffUSKit = ensureUSKit.getUSKit()
-const { registerShortcutKeys, focusSelectElement, clickElement, setupShortcutInfo, showShortcutInfo } = ushruffUSKit
+const { registerShortcutKeys, focusSelectElement, clickElement, waitForElement, setupShortcutInfo, showShortcutInfo } = ushruffUSKit
 
 const SCRIPT_ID = "my-script"
 const MODAL_ID = "my-shortcuts"
@@ -210,6 +210,32 @@ Silently does nothing if none of the selectors match.
 ```js
 // Tries #confirm-btn first, falls back to #ok-btn, then .dialog-accept
 clickElement("#confirm-btn", "#ok-btn", ".dialog-accept")
+```
+
+---
+
+### `waitForElement(selector, timeout?)`
+
+Polls the DOM at 100ms intervals until an element matching `selector` appears, then resolves with it. Rejects with an error if the element does not appear within `timeout` milliseconds.
+
+**Parameters**
+
+| Parameter  | Type     | Required | Description                                           |
+| ---------- | -------- | -------- | ----------------------------------------------------- |
+| `selector` | String   | Yes      | A CSS selector string.                                |
+| `timeout`  | Number   | No       | Maximum wait time in milliseconds. Defaults to `5000`.|
+
+**Returns:** `Promise<Element>`
+
+**Example**
+
+```js
+try {
+  const el = await waitForElement("#dynamic-content")
+  el.click()
+} catch {
+  console.warn("Element never appeared")
+}
 ```
 
 ---
