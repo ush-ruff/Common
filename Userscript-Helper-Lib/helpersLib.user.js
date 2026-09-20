@@ -2,7 +2,7 @@
 // @name         [ushruffUSKit] Userscript Helper Library
 // @namespace    https://github.com/ush-ruff/
 // @author       ushruff
-// @version      0.7.0
+// @version      0.8.0
 // @description  Shared helper library for userscripts
 // @match        *://*/*
 // @icon
@@ -16,7 +16,7 @@
 'use strict'
 
 const LIB_NAME = "ushruffUSKit"
-const LIB_VERSION = "0.7.0" // Keep in sync with @version above
+const LIB_VERSION = "0.8.0" // Keep in sync with @version above
 
 ;(function () {
   // --------------------------------------------------------------------------------
@@ -368,22 +368,37 @@ function focusSelectElement(selector, state, direction = 'next') {
    * Polls the DOM at 100ms intervals until an element matching `selector` appears and resolves with it.
    * Rejects with an error if the element does not appear within `timeout` milliseconds.
    * @param {string} selector - A CSS selector string
+   * @param {Document|Element} [parent=document] - The root to search within
    * @param {number} [timeout=5000] - Maximum wait time in milliseconds
    * @returns {Promise<Element>}
    */
-  function waitForElement(selector, timeout = 5000) {
+  function waitForElement(selector, parent = document, timeout = 5000) {
+    return waitForElements(selector, parent, timeout).then(
+      elements => elements[0]
+    )
+  }
+
+  /**
+   * Polls the DOM at 100ms intervals until an element matching `selector` appears and resolves with it.
+   * Rejects with an error if the element does not appear within `timeout` milliseconds.
+   * @param {string} selector - A CSS selector string
+   * @param {Document|Element} [parent=document] - The root to search within
+   * @param {number} [timeout=5000] - Maximum wait time in milliseconds
+   * @returns {Promise<NodeListOf<Element>>}
+   */
+  function waitForElements(selector, parent = document, timeout = 5000) {
     return new Promise((resolve, reject) => {
       const start = Date.now()
 
       const interval = setInterval(() => {
-        const element = document.querySelector(selector)
+        const elements = parent.querySelectorAll(selector)
 
-        if (element) {
+        if (elements.length) {
           clearInterval(interval)
-          resolve(element)
+          resolve(elements)
         } else if (Date.now() - start > timeout) {
           clearInterval(interval)
-          reject(new Error(`Element not found: ${selector}`))
+          reject(new Error(`Elements not found: ${selector}`))
         }
       }, 100)
     })
@@ -406,6 +421,7 @@ function focusSelectElement(selector, state, direction = 'next') {
       setupShortcutInfo,
       showShortcutInfo,
       waitForElement,
+      waitForElements,
     })
   }
 })()
